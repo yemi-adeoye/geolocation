@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import mapboxgl from '!mapbox-gl';
+import axios from 'axios';
+
+const ACCESS_TOKEN =
+    'pk.eyJ1IjoieWhlbW1pIiwiYSI6ImNrb2dtajAxejBldjkydXA3ZnBvejlmYmEifQ.lqixKQsslg4DnVlG4TWDNQ';
 
 mapboxgl.accessToken =
   'pk.eyJ1IjoieWhlbW1pIiwiYSI6ImNrb2dtajAxejBldjkydXA3ZnBvejlmYmEifQ.lqixKQsslg4DnVlG4TWDNQ';
@@ -18,7 +22,7 @@ const Map = () => {
     lat: 45.523751,
   });
 
-  const [zoom, setZoom] = useState(10);
+  const [zoom, setZoom] = useState(12);
 
   const initMap = () => {
     const options = {
@@ -39,17 +43,22 @@ const Map = () => {
   };
 
   const getRoute = async (e) => {
-    console.log('...getting route');
-    const from = [-84.518641, 39.13427];
-    const to = [-84.512023, 39.102779];
+    
+    // start and stop coordinates
+    const from = [-122.662323, 45.523751] // [-84.518641, 39.13427];
+    const to = [-122.677738,45.522458]    // [-84.512023, 39.102779];
+
+    // construct request url
     const urlConst =
       'https://api.mapbox.com/directions/v5/mapbox/driving-traffic/';
     const urlVar = `${from[0]},${from[1]};${to[0]},${to[1]}?geometries=geojson&access_token=${ACCESS_TOKEN}`;
-    console.log(urlConst + urlVar);
+    
     const response = await axios.get(urlConst + urlVar);
-    const json = await response.json();
-    const data = json.routes[0];
-    const route = data.geometry.coordinate;
+
+    const data = response.data.routes[0];
+
+    const route = data.geometry.coordinates;
+
     const geojson = {
       type: 'Feature',
       properties: {},
@@ -60,12 +69,12 @@ const Map = () => {
     };
 
     // if the route already exists on the map, we'll reset it using setData
-    if (map.getSource('route')) {
-      map.getSource('route').setData(geojson);
+    if (map.current.getSource('route')) {
+      map.current.getSource('route').setData(geojson);
     }
     // otherwise, we'll make a new request
     else {
-      map.addLayer({
+      map.current.addLayer({
         id: 'route',
         type: 'line',
         source: {
@@ -85,11 +94,11 @@ const Map = () => {
     }
     // add turn instructions here at the end
 
-    console.log(response);
   };
   return (
     <div>
       <div ref={container} id='map' style={{ height: '400px' }} />
+      <input type="button" onClick={getRoute} value='go' />
     </div>
   );
 };
